@@ -1,6 +1,6 @@
-# Deploy Vault to AWS with Consul Storage Backend
+# Deploy Vault to AWS with Consul as Storage Backend
 
-This folder contains a Terraform module for deploying Vault to AWS (within a VPC) along with Consul as the storage backend. It can be used as-is or can be modified to work in your scenario, but should serve as a strong starting point for deploying Vault.
+This folder contains a Terraform module for deploying Vault to AWS (within a VPC) along with Consul as the storage backend. It can be used as-is or can be modified to work in your scenario, but should serve as a strong starting point for deploying Vault. Currently, this deploys Vault and Consul together to 3 server all running Ubuntu 16.04.  It used to use upstart but now uses systemd for managing Vault and Consul as services.
 
 The Terraform code will create the following resources in a VPC and subnet that you specify in the AWS us-east-1 region:
 * An AWS auto scaling group with 1 or 3 EC2 instances running Ubuntu 14.04
@@ -10,6 +10,8 @@ The Terraform code will create the following resources in a VPC and subnet that 
 * Security Group Rules to control ingress and egress for the instance and the ELB.
 
 You can deploy this in either a public or a private subnet.  But you must set elb_internal and public_ip as instructed below in both cases.
+
+Note that if using the HTTP download links for the evaulation binaries of Vault Enterprise and Consul Enterprise, you will need to apply license files for both of these.  See more below. Note, however, that you could use Consul Open Source instead of Consul Enterprise with no loss of functionality.  In that case, you would change the consul_download_url to https://releases.hashicorp.com/consul/1.2.1/consul_1.2.1_linux_amd64.zip.
 
 ## Preparation
 1. Download [terraform](https://www.terraform.io/downloads.html) and extract the terraform binary to some directory in your path.
@@ -21,12 +23,15 @@ export AWS_ACCESS_KEY_ID=<your_aws_key>
 export AWS_SECRET_ACCESS_KEY=<your_aws_secret_key>
 export AWS_DEFAULT_REGION=us-east-1
 ```
-1. Edit the file vault.auto.tfvars and provide values for the variables at the top of the file that do not yet have values.
+1. Create a copy of vault.auto.tfvars.example called vault.auto.tfvars and provide values for the variables at the top of the file that do not yet have values.
 key_name = ""
 name_prefix = ""
 instance_name = ""
 vpc_id = ""
 subnets = ""
+auto_join_tag = ""
+
+You'll also need to provide values for owner and ttl at the bottom of the file. See more on these below.
 
 key_name should be the name of an existing AWS keypair in your AWS account in the us-east-1 region. Use the name as it is shown in the AWS Console, not the name of the private key on your computer (such as "roger-vault.pem").  Of course, you'll need that private key file in order to ssh to the Vault instance that is created for you.
 
@@ -38,6 +43,8 @@ vpc_id should be the id of the VPC into which you want to deploy Vault.
 
 subnets should be the id of a subnet in one of your AWS VPCs in us-east-1. (In theory, you could list multiple subnets and separate with commas, but you only need one.)
 
+auto_join_tag should be any distinctive string that will be attached to all the Vault/Consul servers as a tag which will be used to automatically join the servers into a Consul cluster.
+
 If using a public subnet, use the following for elb_internal and public_ip:
 elb_internal = false
 public_ip = true
@@ -47,6 +54,8 @@ elb_internal = true
 public_ip = false
 
 Do not add quotes around true and false when setting elb_internal and public_ip.
+
+You also do need to set values for owner and ttl, but the actual values do not matter.  These are only really used when deployed in HashiCorp's own AWS account since we have a Lambda function that reaps EC2 instances that have lived longer than their ttl value.  Owner should be your name or email.  ttl can be -1.
 
 ## Deployment
 To actually deploy with Terraform, simply run the following two commands:
@@ -81,9 +90,10 @@ You will be able to use the ELB URL after Vault is initialized which you will do
 ```
 export VAULT_ADDR=http://127.0.0.1:8200
 export VAULT_TOKEN=<your_root_token>
-vault write sys/license text=<contents_of_your_license_file>
+vault write sys/license text=<contents_of_vault_license>
+consul license put <contents_of_consul_license>
 ```
-The last command should show "Success! Data written to: sys/license"
+The third command should show "Success! Data written to: sys/license" while the fourth command should show "License is valid" and some other text.
 
 1. To avoid having to export the two variables in future SSH sessions, edit /home/ubuntu/.profile, /home/ubuntu/.bash_profile, and/or /home/ubuntu/.bashrc and add the two export commands at the bottom.
 

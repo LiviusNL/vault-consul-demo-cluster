@@ -3,6 +3,7 @@ name_prefix = ""
 instance_name = ""
 vpc_id = ""
 subnets = " , , "
+auto_join_tag = ""
 
 elb_internal = false
 public_ip = true
@@ -17,4 +18,3 @@ instance_type = ""
 
 owner = ""
 ttl = ""
-auto_join_tag = ""
