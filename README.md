@@ -1,6 +1,6 @@
 # Deploy Vault to AWS with Consul as Storage Backend
 
-This folder contains a Terraform module for deploying Vault to AWS (within a VPC) along with Consul as the storage backend. It can be used as-is or can be modified to work in your scenario, but should serve as a strong starting point for deploying Vault. Currently, this deploys Vault and Consul together to 3 server all running Ubuntu 16.04.  It used to use upstart but now uses systemd for managing Vault and Consul as services.
+This folder contains a Terraform module for deploying Vault to AWS (within a VPC) along with Consul as the storage backend. It can be used as-is or can be modified to work in your scenario, but should serve as a strong starting point for deploying Vault. Currently, this deploys Vault and Consul together to 3 server all running Ubuntu 16.04.  It used to use upstart but now uses systemd for managing Vault and Consul as services. The choice of AMI is specified by the ami variable which could be changed by adding that to your vault.auto.tfvars file and setting it to the AMI of your choice, being sure to specify some AMI that uses a Linux distribution that supports systemd.
 
 The Terraform code will create the following resources in a VPC and subnet that you specify in the AWS us-east-1 region:
 * An AWS auto scaling group with 1 or 3 EC2 instances running Ubuntu 14.04
